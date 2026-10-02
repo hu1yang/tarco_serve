@@ -125,6 +125,17 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# Local project settings and credentials
+.idea/
+secrets/
+.12ui/
+
+# Local development data
+data/*.sqlite*
+
+# OS metadata
+.DS_Store
+
 # pnpm
 .pnpm-store
 

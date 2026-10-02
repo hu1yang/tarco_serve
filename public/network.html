@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <title>弱网模拟 · Push Deck</title>
+  <meta name="description" content="为本地 Flutter 与 Node 接口模拟延迟、抖动、超时、断线和异常响应。">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Push Deck 首页">
+      <span class="brand-mark" aria-hidden="true">↑</span>
+      <span>Push Deck</span>
+    </a>
+    <nav class="topnav" aria-label="工作台导航">
+      <a href="/">推送工作台</a>
+      <a class="is-active" href="/network.html">弱网模拟</a>
+    </nav>
+    <div class="service-status" id="serviceStatus">
+      <span class="status-dot"></span>
+      <span>正在连接服务</span>
+    </div>
+  </header>
+
+  <main class="network-shell">
+    <section class="network-heading">
+      <div>
+        <p class="eyebrow">NETWORK LAB</p>
+        <h1>让网络变差，<br><span>让客户端变稳。</span></h1>
+      </div>
+      <div class="master-control">
+        <div>
+          <strong id="masterLabel">弱网模拟已关闭</strong>
+          <span id="activeDescription">所有 API 按正常速度运行</span>
+        </div>
+        <label class="switch">
+          <input id="masterToggle" type="checkbox" role="switch" aria-label="开启弱网模拟">
+          <span></span>
+        </label>
+      </div>
+    </section>
+
+    <section class="lab-grid">
+      <div class="lab-main">
+        <section class="lab-card" aria-labelledby="presetTitle">
+          <div class="card-heading">
+            <div>
+              <p class="section-index">01 / PRESETS</p>
+              <h2 id="presetTitle">选择网络环境</h2>
+            </div>
+            <span class="active-profile" id="activeProfile">未启用</span>
+          </div>
+          <div class="profile-grid" id="profileGrid" aria-live="polite"></div>
+        </section>
+
+        <section class="lab-card" aria-labelledby="customTitle">
+          <div class="card-heading">
+            <div>
+              <p class="section-index">02 / CUSTOM</p>
+              <h2 id="customTitle">自定义参数</h2>
+            </div>
+            <button class="button button-quiet" id="saveCustom" type="button">应用自定义</button>
+          </div>
+          <div class="config-grid">
+            <label class="metric-field"><span>最小延迟 <em>ms</em></span><input id="minDelayMs" type="number" min="0" max="30000"></label>
+            <label class="metric-field"><span>最大延迟 <em>ms</em></span><input id="maxDelayMs" type="number" min="0" max="30000"></label>
+            <label class="metric-field"><span>503 概率 <em>%</em></span><input id="serviceUnavailableRate" type="number" min="0" max="100"></label>
+            <label class="metric-field"><span>超时概率 <em>%</em></span><input id="timeoutRate" type="number" min="0" max="100"></label>
+            <label class="metric-field"><span>断线概率 <em>%</em></span><input id="disconnectRate" type="number" min="0" max="100"></label>
+            <label class="metric-field"><span>429 概率 <em>%</em></span><input id="rateLimitRate" type="number" min="0" max="100"></label>
+            <label class="metric-field"><span>异常正文 <em>%</em></span><input id="malformedRate" type="number" min="0" max="100"></label>
+            <label class="metric-field"><span>超时持续 <em>ms</em></span><input id="timeoutMs" type="number" min="1000" max="30000"></label>
+          </div>
+          <p class="probability-note" id="probabilityNote">异常概率合计 0%，其余请求成功。</p>
+        </section>
+      </div>
+
+      <aside class="lab-side">
+        <section class="lab-card probe-card" aria-labelledby="probeTitle">
+          <p class="section-index">03 / PROBE</p>
+          <h2 id="probeTitle">发送测试请求</h2>
+          <p>探针会经过当前弱网规则，用来快速观察响应。</p>
+          <label class="probe-timeout"><span>客户端等待上限</span><select id="clientTimeout"><option value="3000">3 秒</option><option value="5000" selected>5 秒</option><option value="10000">10 秒</option><option value="20000">20 秒</option></select></label>
+          <button class="button button-send probe-button" id="runProbe" type="button"><span>运行一次</span><span aria-hidden="true">→</span></button>
+          <div class="probe-result is-idle" id="probeResult" aria-live="polite">
+            <span class="probe-signal"></span>
+            <div><strong>等待测试</strong><small>选择一个预设后运行探针</small></div>
+          </div>
+        </section>
+
+        <section class="lab-card stats-card" aria-labelledby="statsTitle">
+          <div class="card-heading compact">
+            <div><p class="section-index">LIVE METRICS</p><h2 id="statsTitle">本轮统计</h2></div>
+            <button class="text-button" id="clearLogs" type="button">清空</button>
+          </div>
+          <div class="stats-grid">
+            <div><strong id="statTotal">0</strong><span>请求</span></div>
+            <div><strong id="statSuccess">0%</strong><span>成功率</span></div>
+            <div><strong id="statDuration">0</strong><span>平均 ms</span></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="lab-card request-log" aria-labelledby="requestLogTitle">
+      <div class="card-heading">
+        <div><p class="section-index">04 / REQUEST LOG</p><h2 id="requestLogTitle">最近请求</h2></div>
+        <span class="log-hint">自动刷新</span>
+      </div>
+      <div class="log-table-wrap">
+        <table class="network-table">
+          <thead><tr><th>时间</th><th>请求</th><th>环境</th><th>结果</th><th>模拟延迟</th><th>总耗时</th></tr></thead>
+          <tbody id="networkLogs"><tr><td class="empty-table" colspan="6">暂无请求，可先运行一次探针。</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/network.js" type="module"></script>
+</body>
+</html>

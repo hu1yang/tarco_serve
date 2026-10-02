@@ -1,0 +1,30 @@
+{
+  "name": "tarco-push-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Express service for APNs notifications and iOS Live Activities",
+  "scripts": {
+    "admin:dev": "vite --config admin/vite.config.js",
+    "admin:build": "vite build --config admin/vite.config.js",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:seed": "node scripts/seed-flights.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mysql2": "^3.24.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.2.0",
+    "vite": "^7.3.6"
+  }
+}

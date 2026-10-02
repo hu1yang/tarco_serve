@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: local_root_password
+      MYSQL_DATABASE: tarco_serve
+      MYSQL_USER: tarco_app
+      MYSQL_PASSWORD: local_dev_password
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - tarco_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-plocal_root_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  tarco_mysql_data:
