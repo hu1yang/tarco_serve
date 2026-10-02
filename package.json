@@ -9,6 +9,7 @@
     "admin:build": "vite build --config admin/vite.config.js",
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "db:wait": "node scripts/wait-for-database.js",
     "db:seed": "node scripts/seed-flights.js",
     "test": "node --test"
   },

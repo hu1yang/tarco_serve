@@ -311,6 +311,7 @@ cd tarco_serve
 cp .env.example .env
 npm install
 docker compose up -d mysql
+npm run db:wait
 npm run dev
 ```
 
@@ -340,7 +341,7 @@ docker compose down
 docker compose down -v
 ```
 
-推送到 iOS 模拟器还需要 macOS、Xcode 和已启动的 iOS Simulator；数据库、API 和管理后台的普通本地开发不要求 iOS 模拟器。`.env` 是每位开发者自己的本地配置，不要提交；如需连接非 Docker 的 MySQL，只需修改其中的 `MYSQL_*` 配置。
+Compose 默认把数据库映射到本机 `3307` 端口，以避开常见的本地 MySQL `3306` 端口；如仍有冲突，可修改 `.env` 中的 `MYSQL_PORT`。推送到 iOS 模拟器还需要 macOS、Xcode 和已启动的 iOS Simulator；数据库、API 和管理后台的普通本地开发不要求 iOS 模拟器。`.env` 是每位开发者自己的本地配置，不要提交；如需连接非 Docker 的 MySQL，只需修改其中的 `MYSQL_*` 配置。
 
 ## React 管理后台
 
