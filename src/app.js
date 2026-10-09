@@ -41,6 +41,24 @@ export function createApp({
     });
     next();
   });
+  app.use((request, response, next) => {
+    const origin = request.get('origin');
+    const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+      .split(',').map((item) => item.trim()).filter(Boolean);
+    // Localhost is convenient for development; production origins must be
+    // explicitly listed in CORS_ALLOWED_ORIGINS (use https origins).
+    if (origin && (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      || configuredOrigins.includes(origin))) {
+      response.set({
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Accept, Authorization, Content-Type, X-Request-Id',
+        Vary: 'Origin',
+      });
+    }
+    if (request.method === 'OPTIONS') return response.sendStatus(204);
+    return next();
+  });
   app.get('/', (_request, response) => response.redirect('/admin/'));
   app.use(express.static(publicDirectory));
   app.use(express.json({ limit: '64kb' }));
@@ -57,14 +75,15 @@ export function createApp({
 
   app.post('/api/init', async (request, response, next) => {
     try {
-      const { bundleId, device, guestToken, userRefreshToken } = request.body;
+      const { bundleId, device, deviceId, platform, guestToken, userRefreshToken } = request.body;
       let guest;
       let auth;
-      if (device !== undefined) {
-        if (!device || typeof device !== 'object' || Array.isArray(device)) {
+      const deviceDetails = device ?? (deviceId !== undefined ? { deviceId } : undefined);
+      if (deviceDetails !== undefined) {
+        if (!deviceDetails || typeof deviceDetails !== 'object' || Array.isArray(deviceDetails)) {
           throw new AuthError('device 必须是对象');
         }
-        const deviceInput = { ...device, bundleId };
+        const deviceInput = { ...deviceDetails, ...(platform ? { platform } : {}), bundleId };
         guest = guestToken
           ? await accounts.resumeGuest(guestToken, deviceInput)
           : await accounts.createGuest(deviceInput);

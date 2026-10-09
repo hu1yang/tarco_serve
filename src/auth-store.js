@@ -56,7 +56,7 @@ const SCHEMA = [
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     device_id VARCHAR(128) NOT NULL,
-    platform ENUM('ios', 'android') NOT NULL DEFAULT 'ios',
+    platform ENUM('ios', 'android', 'web') NOT NULL DEFAULT 'ios',
     push_token VARCHAR(255) NULL,
     simulator_udid CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
     bundle_id VARCHAR(255) NOT NULL,
@@ -71,7 +71,7 @@ const SCHEMA = [
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     guest_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     device_id VARCHAR(128) NOT NULL,
-    platform ENUM('ios', 'android') NOT NULL DEFAULT 'ios',
+    platform ENUM('ios', 'android', 'web') NOT NULL DEFAULT 'ios',
     push_token VARCHAR(255) NULL,
     simulator_udid CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
     bundle_id VARCHAR(255) NOT NULL,
@@ -141,7 +141,7 @@ function validGuestId(value) {
 
 function deviceInput(input = {}) {
   const platform = input.platform ?? 'ios';
-  if (!['ios', 'android'].includes(platform)) throw new AuthError('platform 格式无效');
+  if (!['ios', 'android', 'web'].includes(platform)) throw new AuthError('platform 格式无效');
   const deviceId = requiredText(input.deviceId, 'deviceId', 128);
   if (!/^[A-Za-z0-9._:-]+$/.test(deviceId)) {
     throw new AuthError('deviceId 格式无效');
@@ -215,9 +215,9 @@ export class AuthStore {
         await this.pool.execute(`ALTER TABLE ${table} ADD COLUMN simulator_udid
           CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER push_token`);
       }
-      if (!deviceColumns.find((column) => column.COLUMN_NAME === 'platform')?.COLUMN_TYPE.includes('android')) {
+      if (!deviceColumns.find((column) => column.COLUMN_NAME === 'platform')?.COLUMN_TYPE.includes('web')) {
         await this.pool.execute(`ALTER TABLE ${table}
-          MODIFY COLUMN platform ENUM('ios', 'android') NOT NULL DEFAULT 'ios'`);
+          MODIFY COLUMN platform ENUM('ios', 'android', 'web') NOT NULL DEFAULT 'ios'`);
       }
     }
   }
@@ -351,13 +351,17 @@ export class AuthStore {
   async createGuest(input = {}) {
     const device = deviceInput(input);
     await this.initialize();
-    const guestId = crypto.randomUUID();
+    const [existingGuests] = device.platform === 'web'
+      ? await this.pool.execute(`SELECT guest_id FROM guest_devices
+        WHERE device_id = ? AND bundle_id = ? LIMIT 1`, [device.deviceId, device.bundleId])
+      : [[]];
+    const guestId = existingGuests[0]?.guest_id || crypto.randomUUID();
     const guestToken = crypto.randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + GUEST_LIFETIME_MS);
     const connection = await this.pool.getConnection();
     try {
       await connection.beginTransaction();
-      await connection.execute(
+      if (!existingGuests[0]) await connection.execute(
         'INSERT INTO guests (id, created_at) VALUES (?, UTC_TIMESTAMP(3))', [guestId],
       );
       await connection.execute(`INSERT INTO guest_sessions

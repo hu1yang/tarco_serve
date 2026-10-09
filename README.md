@@ -157,6 +157,30 @@ curl -X POST http://127.0.0.1:3000/api/init \
 不传 `device` 时，`/api/init` 仍保持原来的行为，方便现有管理后台和旧客户端继续使用。
 `POST /api/auth/guest` 也暂时保留为兼容接口，新客户端不再需要单独调用。
 
+Web 客户端提供稳定的 `deviceId` 和 `bundleId` 即可创建游客身份，不需要 APNs/FCM
+`pushToken`。可以把 `platform` 放在顶层或 `device` 对象内：
+
+```json
+{
+  "bundleId": "com.example.passenger",
+  "platform": "web",
+  "device": { "deviceId": "browser-installation-9f2c..." }
+}
+```
+
+首次响应中的 `guest.guestToken` 应由 Web 客户端安全持久化，并在后续 `/api/init` 及
+`POST /api/bookings/drafts` 请求中传回。即使浏览器清除了 Token，只要稳定 `deviceId`
+与 `bundleId` 仍相同，初始化也会恢复该设备关联的游客并签发新的 `guestToken`。
+
+生产部署应由提供 HTTPS 的反向代理或托管平台终止 TLS，并设置 `CORS_ALLOWED_ORIGINS`
+为允许访问 API 的前端 HTTPS 源，多个源用逗号分隔，例如：
+
+```env
+CORS_ALLOWED_ORIGINS=https://passenger.example.com,https://www.passenger.example.com
+```
+
+开发环境仍允许 localhost。生产客户端与 API 均应使用 HTTPS，避免浏览器混合内容限制。
+
 项目中的 Flutter 客户端可以直接这样初始化：
 
 ```dart
